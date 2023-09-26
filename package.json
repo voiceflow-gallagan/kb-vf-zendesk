@@ -1,0 +1,25 @@
+{
+  "name": "vf-kb-zendesk-import",
+  "version": "1.0.0",
+  "main": "app.js",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "start": "node app.js",
+    "prod": "pm2 restart ecosystem.config.cjs --exp-backoff-restart-delay=100 --log pm2log --env production",
+    "stop": "pm2 stop ecosystem.config.cjs"
+  },
+  "dependencies": {
+    "async": "^3.2.4",
+    "axios": "^0.26.1",
+    "dotenv": "^16.0.3",
+    "express": "^4.17.1",
+    "form-data": "^4.0.0",
+    "html-to-text": "^9.0.5",
+    "inquirer": "^9.2.11",
+    "node-cron": "^3.0.2",
+    "ora": "^7.0.1",
+    "prompt": "^1.3.0",
+    "sitemap-xml-parser": "^0.0.2"
+  }
+}
