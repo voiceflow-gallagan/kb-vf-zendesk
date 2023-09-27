@@ -142,6 +142,10 @@ For more details, you can check the [PM2 Documentation](https://pm2.keymetrics.i
     "previousDays": 30
   }
   ```
+## Video Tutorial
+
+[![Video Tutorial](https://img.youtube.com/vi/NaeWfDCNmMM/0.jpg)](https://youtu.be/NaeWfDCNmMM)
+
 
 ## Contributing
 
