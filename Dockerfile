@@ -9,11 +9,11 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y git
 
-# Clone your repository
-RUN git clone https://github.com/voiceflow-gallagan/kb-vf-zendesk.git .
-
 # Install PM2 globally in the image
 RUN npm install pm2 -g
+
+# Copy package.json and package-lock.json
+COPY package*.json ./
 
 # Install app dependencies
 RUN npm install
