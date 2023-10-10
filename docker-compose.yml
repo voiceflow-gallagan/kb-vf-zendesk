@@ -1,0 +1,10 @@
+version: '3'
+services:
+  zendesk-kb:
+    build: .
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - "${PORT}:${PORT}"
+    environment:
+      - NODE_ENV=${NODE_ENV}
