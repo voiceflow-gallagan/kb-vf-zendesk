@@ -237,7 +237,9 @@ async function parseZendeskArticles(url, apiKey) {
       wordwrap: 130,
     }
     title = convert(title, options).trim()
+    title = cloudFlareFW(title)
     body = convert(body, options).trim()
+    body = cloudFlareFW(body)
 
     if (body.length > 5) {
       await new Promise((resolve, reject) => {
@@ -370,4 +372,12 @@ async function interactiveFetchZendeskArticles() {
 if (!process.env.NODE_APP_INSTANCE) {
   // Call the function to start the interactive prompt
   interactiveFetchZendeskArticles()
+}
+
+function cloudFlareFW(str) {
+  // Replace all .exe with nothing
+  str = str.replace(/\b\.exe\b/g, '')
+  // Add an extra space after /var/
+  str = str.replace(/(\/var\/)/g, '/var /')
+  return str
 }
