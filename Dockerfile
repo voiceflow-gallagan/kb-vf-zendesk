@@ -6,8 +6,7 @@ WORKDIR /usr/src/app
 
 # Install git
 RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y git
+    apt-get upgrade -y
 
 # Install PM2 globally in the image
 RUN npm install pm2 -g

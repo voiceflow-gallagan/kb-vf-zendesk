@@ -8,7 +8,7 @@
     "start": "node app.js",
     "prod": "pm2 restart ecosystem.config.cjs --exp-backoff-restart-delay=100 --log pm2log --env production",
     "prod-stop": "pm2 stop ecosystem.config.cjs",
-    "docker-start": "docker-compose up --build -d",
+    "docker-start": "docker-compose down --rmi all && docker-compose up --remove-orphans --build -d",
     "docker-stop": "docker-compose down"
   },
   "dependencies": {
