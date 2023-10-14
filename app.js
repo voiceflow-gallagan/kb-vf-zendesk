@@ -40,6 +40,13 @@ spinner.succeed(
   'Voiceflow Zendesk KB | API is listening on port ' + process.env.PORT
 )
 
+app.get('/health', async (req, res) => {
+  res.json({
+    success: true,
+    message: 'Server is healthy',
+  })
+})
+
 /* Get endpoint to check current status  */
 app.get('/api/health', async (req, res) => {
   res.json({
