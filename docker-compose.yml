@@ -6,6 +6,11 @@ services:
     image: 'zendesk-kb'
     container_name: 'zendesk-kb'
     network_mode: "host"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT}/health"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
     volumes:
       - .:/usr/src/app
     environment:
