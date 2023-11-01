@@ -85,6 +85,8 @@ app.post('/api/cron', async (req, res) => {
 /* Post endpoint to trigger the update */
 app.post('/api/zendesk', async (req, res) => {
   const apiKey = req.body.apiKey || process.env.VOICEFLOW_KB_API_KEY || null
+  const projectID =
+    req.body.projectID || process.env.VOICEFLOW_PROJECT_ID || null
   const url = req.body.url || process.env.ZENDESK_SITEMAP || null
   const force = req.body.force || process.env.ALWAYS_FORCE
   const previousDays = req.body.previousDays || process.env.PREVIOUS_DAYS || 30
@@ -94,9 +96,25 @@ app.post('/api/zendesk', async (req, res) => {
     return
   }
 
+  if (!projectID) {
+    res.status(500).json({ message: 'No project ID provided' })
+    return
+  }
+
+  if (!url) {
+    res.status(500).json({ message: 'No URL provided' })
+    return
+  }
+
   try {
     res.json({ success: true, message: 'PENDING' })
-    let result = await fetchZendeskArticles(url, force, previousDays, apiKey)
+    let result = await fetchZendeskArticles(
+      url,
+      force,
+      previousDays,
+      apiKey,
+      projectID
+    )
   } catch (err) {
     res.status(500).json({ message: 'Error processing the sitemap' })
   }
@@ -116,7 +134,7 @@ function handleFailure() {
 }
 
 const queue = async.queue((task, callback) => {
-  executePostRequest(task.filename, task.apiKey, callback)
+  executePostRequest(task.filename, task.apiKey, task.projectID, callback)
     .then(() => {
       failureCount = 0
     })
@@ -155,7 +173,13 @@ async function parseSitemap(url, filter, force, previousDays) {
   return urls
 }
 
-async function fetchZendeskArticles(sitemapURL, force, previousDays, apiKey) {
+async function fetchZendeskArticles(
+  sitemapURL,
+  force,
+  previousDays,
+  apiKey,
+  projectID
+) {
   if (!apiKey) {
     apiKey = process.env.VOICEFLOW_KB_API_KEY || null
   }
@@ -190,7 +214,7 @@ async function fetchZendeskArticles(sitemapURL, force, previousDays, apiKey) {
         spinner.text = `Adding/Updating [ ${count} of ${sitemap.length} ]`
         await sleepWait(500)
         try {
-          await parseZendeskArticles(sitemap[i], apiKey)
+          await parseZendeskArticles(sitemap[i], apiKey, projectID)
         } catch (error) {
           handleFailure()
         }
@@ -219,7 +243,7 @@ async function fetchZendeskArticles(sitemapURL, force, previousDays, apiKey) {
 /* Convert from raw HTML to text */
 /* Save the txt file */
 /* Add to queue for KB upload */
-async function parseZendeskArticles(url, apiKey) {
+async function parseZendeskArticles(url, apiKey, projectID) {
   const regex = /\/(\d+)-/
   const match = url.match(regex)
   const lastPart = url.substring(url.lastIndexOf('/') + 1)
@@ -244,9 +268,7 @@ async function parseZendeskArticles(url, apiKey) {
       wordwrap: 130,
     }
     title = convert(title, options).trim()
-    title = cloudFlareFW(title)
     body = convert(body, options).trim()
-    body = cloudFlareFW(body)
 
     if (body.length > 5) {
       await new Promise((resolve, reject) => {
@@ -266,7 +288,7 @@ async function parseZendeskArticles(url, apiKey) {
               await sleepWait(2000)
               if (shouldContinue) {
                 // Only push to the queue if shouldContinue is true
-                queue.push({ filename: filename, apiKey })
+                queue.push({ filename: filename, apiKey, projectID })
                 resolve()
               } else {
                 reject(
@@ -284,13 +306,13 @@ async function parseZendeskArticles(url, apiKey) {
 }
 
 /* Function to upload to KB */
-async function executePostRequest(filename, apiKey, callback) {
+async function executePostRequest(filename, apiKey, projectID, callback) {
   const form = new FormData()
   form.append('file', fs.createReadStream(docDir + filename), filename)
 
   const options = {
     method: 'POST',
-    url: `https://api.voiceflow.com/v3alpha/knowledge-base/docs/upload?overwrite=true&maxChunkSize=1500`,
+    url: `https://api.voiceflow.com/v3/projects/${projectID}/knowledge-base/documents/file?overwrite=true&maxChunkSize=1500`,
     headers: {
       clientkey: 'ZENDESK_POC',
       Authorization: apiKey,
@@ -314,6 +336,7 @@ async function executePostRequest(filename, apiKey, callback) {
     spinner.text = `✔ Added ${filename}`
     callback()
   } catch (error) {
+    console.error(error)
     spinner.fail(`Error adding file ${filename} to KB`)
     throw error
   }
@@ -337,6 +360,12 @@ async function interactiveFetchZendeskArticles() {
         name: 'apiKey',
         message: 'Your KB API key (default VOICEFLOW_KB_API_KEY)',
         default: process.env.VOICEFLOW_KB_API_KEY || null,
+      },
+      {
+        type: 'input',
+        name: 'projectID',
+        message: 'Your project ID (default VOICEFLOW_PROJECT_ID)',
+        default: process.env.VOICEFLOW_PROJECT_ID || null,
       },
       {
         type: 'input',
@@ -368,7 +397,8 @@ async function interactiveFetchZendeskArticles() {
       answers.sitemapURL,
       answers.force,
       answers.previousDays,
-      answers.apiKey
+      answers.apiKey,
+      answers.projectID
     )
   } else if (answersMenu.menu === 'Exit') {
     process.exit()
@@ -379,12 +409,4 @@ async function interactiveFetchZendeskArticles() {
 if (!process.env.NODE_APP_INSTANCE) {
   // Call the function to start the interactive prompt
   interactiveFetchZendeskArticles()
-}
-
-function cloudFlareFW(str) {
-  // Replace all .exe with nothing
-  str = str.replace(/\b\.exe\b/g, '')
-  // Add an extra space after /var/
-  str = str.replace(/(\/var\/)/g, '/var /')
-  return str
 }

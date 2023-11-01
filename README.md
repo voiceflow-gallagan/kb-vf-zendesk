@@ -40,6 +40,7 @@ The application uses the following environment variables which are stored in a `
 - `ZENDESK_SITEMAP`: The URL of your Zendesk sitemap. If not provided, the default Zendesk sitemap for your subdomain will be used.
 - `SITEMAP_FILTER`: A string that will be used to filter the URLs from the sitemap. Only URLs that contain this string will be processed. Default is '/articles/'.
 - `VOICEFLOW_KB_API_KEY`: Your Voiceflow API key. You can get this from your Assistant integrations page on Voiceflow.
+- `VOICEFLOW_PROJECT_ID`: Your Voiceflow Project ID. You can get this from your Assistant settings page on Voiceflow.
 - `ALWAYS_FORCE`: If set to true, all URLs will be processed without checking the last modification date. Default is false.
 - `PREVIOUS_DAYS`: The number of days to check for the last modification date. Default is 7. Ignored is `ALWAYS_FORCE` is set to true.
 - `DEBUG`: If set to true, the application will not send anything to your KB. Default is false.
@@ -66,7 +67,7 @@ This token is what you'll use as the `ZENDESK_API_KEY` in your `.env` file.
 
 ### Interactive Prompt
 
-When the app is not running with PM2, it will start an interactive prompt where you can update the KB or exit the app. If you choose to update the KB, it will ask for your KB API key, sitemap URL, whether to force the update and the number of previous days to check for last modification date.
+When the app is not running with PM2, it will start an interactive prompt where you can update the KB or exit the app. If you choose to update the KB, it will ask for your KB API key, project ID, sitemap URL, whether to force the update and the number of previous days to check for last modification date.
 Run the application in interactive mode:
 
 ```bash
@@ -137,6 +138,7 @@ For more details, you can check the [PM2 Documentation](https://pm2.keymetrics.i
   ```json
   {
     "apiKey": "VF.DM.XXX",
+    "projectID": "XXX",
     "url": "https://learn.voiceflow.com/hc/sitemap.xml",
     "force": true,
     "previousDays": 30
