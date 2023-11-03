@@ -37,6 +37,7 @@ The application uses the following environment variables which are stored in a `
 - `MAX_FAILURES`: The maximum number of failures allowed before the application stops processing the articles. Default is 3.
 - `ZENDESK_API_KEY`: Your Zendesk API key. You can get this from your Zendesk account's API settings (see bellow).
 - `ZENDESK_SUBDOMAIN`: The subdomain of your Zendesk account.
+- `FETCH_METHOD`: Set this to API to use Zendesk API instead of Sitemap.
 - `ZENDESK_SITEMAP`: The URL of your Zendesk sitemap. If not provided, the default Zendesk sitemap for your subdomain will be used.
 - `SITEMAP_FILTER`: A string that will be used to filter the URLs from the sitemap. Only URLs that contain this string will be processed. Default is '/articles/'.
 - `VOICEFLOW_KB_API_KEY`: Your Voiceflow API key. You can get this from your Assistant integrations page on Voiceflow.
