@@ -143,7 +143,7 @@ const queue = async.queue((task, callback) => {
       handleFailure()
       callback(error)
     })
-}, 1)
+}, 5)
 
 /* Function for the sitemap parser */
 async function parseSitemap(url, filter, force, previousDays) {
@@ -173,6 +173,56 @@ async function parseSitemap(url, filter, force, previousDays) {
   return urls
 }
 
+/* Functions to fetch articles using Zendesk API */
+const instance = axios.create({
+  baseURL: `https://${process.env.ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/help_center/`,
+  timeout: 10000,
+  headers: { Authorization: `Basic ${process.env.ZENDESK_API_KEY}` },
+})
+
+async function getAllPages(url) {
+  let response = await instance.get(url)
+  let data = response.data
+
+  while (response.data.next_page) {
+    response = await instance.get(response.data.next_page)
+    data = data.concat(response.data)
+  }
+
+  return data
+}
+
+async function getAllArticles(force, previousDays) {
+  const sections = await getAllPages('sections.json')
+  let allArticles = []
+
+  for (let section of sections.sections) {
+    const articles = await getAllPages(
+      `en-us/sections/${section.id}/articles.json`
+    )
+    allArticles = allArticles.concat(articles.articles)
+  }
+
+  if (!previousDays) {
+    previousDays = process.env.PREVIOUS_DAYS || 30
+  }
+  if (force !== true) {
+    force = null
+  }
+
+  const period = new Date()
+  period.setDate(period.getDate() - previousDays)
+
+  const filteredData = allArticles.filter((item) => {
+    const lastmodDate = new Date(item.edited_at) //updated_at)
+    return force || lastmodDate >= period
+  })
+  // Extract URLs
+  const articleUrls = filteredData.map((article) => article.html_url)
+
+  return articleUrls
+}
+
 async function fetchZendeskArticles(
   sitemapURL,
   force,
@@ -194,18 +244,29 @@ async function fetchZendeskArticles(
         process.env.ZENDESK_SITEMAP ||
         `https://${process.env.ZENDESK_SUBDOMAIN}.zendesk.com/hc/sitemap.xml`
     }
-    let sitemap = await parseSitemap(
-      sitemapURL,
-      sitemapFilter,
-      force,
-      previousDays
-    )
+    // Check if FETCH_METHOD is set to API
+    let sitemap
+    if (sitemapURL == 'API' || process.env.FETCH_METHOD === 'API') {
+      // Fetch articles using Zendesk API
+      sitemap = await getAllArticles(force, previousDays)
+    } else {
+      // Fetch articles using sitemap
+      sitemap = await parseSitemap(
+        sitemapURL,
+        sitemapFilter,
+        force,
+        previousDays
+      )
+    }
 
     if (sitemap.length === 0) {
-      console.log('\nNo URLs in sitemap (check domain and/or filter)')
-      return 'No URLs in sitemap (check domain and/or filter)'
+      console.log(
+        '\nNo Article to fetch (check domain and/or previous days value/filter)'
+      )
+      return 'No Article to fetch (check domain and/or previous days value/filter)'
     } else {
       let count = 0
+      let tasks = []
       for (let i = 0; i < sitemap.length; i++) {
         if (!shouldContinue) {
           break
@@ -214,8 +275,18 @@ async function fetchZendeskArticles(
         spinner.text = `Adding/Updating [ ${count} of ${sitemap.length} ]`
         await sleepWait(500)
         try {
-          await parseZendeskArticles(sitemap[i], apiKey, projectID)
+          const task = await parseZendeskArticles(sitemap[i], apiKey, projectID)
+          if (task) {
+            tasks.push(task)
+          }
+          if (tasks.length === 5 || i === sitemap.length - 1) {
+            tasks.forEach((task) => queue.push(task))
+            await new Promise((resolve) => queue.drain(resolve))
+            await sleepWait(2000)
+            tasks = []
+          }
         } catch (error) {
+          console.log(error)
           handleFailure()
         }
         await sleepWait(500)
@@ -270,8 +341,8 @@ async function parseZendeskArticles(url, apiKey, projectID) {
     title = convert(title, options).trim()
     body = convert(body, options).trim()
 
-    if (body.length > 5) {
-      await new Promise((resolve, reject) => {
+    if (body.length > 3) {
+      return await new Promise((resolve, reject) => {
         if (!fs.existsSync(docDir)) {
           // if the directory does not exist, create it
           fs.mkdirSync(docDir, { recursive: true })
@@ -287,9 +358,8 @@ async function parseZendeskArticles(url, apiKey, projectID) {
             } else {
               await sleepWait(2000)
               if (shouldContinue) {
-                // Only push to the queue if shouldContinue is true
-                queue.push({ filename: filename, apiKey, projectID })
-                resolve()
+                // Only return the task if shouldContinue is true
+                resolve({ filename: filename, apiKey, projectID })
               } else {
                 reject(
                   new Error('Stopping processing due to too many failures.')
@@ -368,12 +438,21 @@ async function interactiveFetchZendeskArticles() {
         default: process.env.VOICEFLOW_PROJECT_ID || null,
       },
       {
+        type: 'confirm',
+        name: 'useApi',
+        message: 'Do you want to use the Zendesk API to fetch articles?',
+        default: true,
+      },
+      {
         type: 'input',
         name: 'sitemapURL',
         message: 'Enter your sitemap URL',
         default:
           process.env.ZENDESK_SITEMAP ||
           `https://${process.env.ZENDESK_SUBDOMAIN}.zendesk.com/hc/sitemap.xml`,
+        when: function (answers) {
+          return !answers.useApi // Ask this question only if useApi is false
+        },
       },
       {
         type: 'confirm',
@@ -394,7 +473,7 @@ async function interactiveFetchZendeskArticles() {
 
     const answers = await inquirer.prompt(questions)
     fetchZendeskArticles(
-      answers.sitemapURL,
+      answers.useApi ? 'API' : answers.sitemapURL,
       answers.force,
       answers.previousDays,
       answers.apiKey,
