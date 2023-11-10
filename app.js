@@ -180,27 +180,28 @@ const instance = axios.create({
   headers: { Authorization: `Basic ${process.env.ZENDESK_API_KEY}` },
 })
 
-async function getAllPages(url) {
+async function getAllPages(url, dataKey) {
   let response = await instance.get(url)
-  let data = response.data
+  let data = response.data[dataKey]
 
   while (response.data.next_page) {
     response = await instance.get(response.data.next_page)
-    data = data.concat(response.data)
+    data = data.concat(response.data[dataKey])
   }
 
   return data
 }
 
 async function getAllArticles(force, previousDays) {
-  const sections = await getAllPages('sections.json')
+  const sections = await getAllPages('sections.json', 'sections')
   let allArticles = []
 
-  for (let section of sections.sections) {
+  for (let section of sections) {
     const articles = await getAllPages(
-      `en-us/sections/${section.id}/articles.json`
+      `en-us/sections/${section.id}/articles.json`,
+      'articles'
     )
-    allArticles = allArticles.concat(articles.articles)
+    allArticles = allArticles.concat(articles)
   }
 
   if (!previousDays) {
@@ -286,7 +287,9 @@ async function fetchZendeskArticles(
             tasks = []
           }
         } catch (error) {
-          console.log(error)
+          if (process.env.DEBUG === 'true') {
+            console.log(err)
+          }
           handleFailure()
         }
         await sleepWait(500)
@@ -301,12 +304,17 @@ async function fetchZendeskArticles(
       return 'KB has been updated'
     }
   } catch (err) {
+    if (process.env.DEBUG === 'true') {
+      console.log(err)
+    }
     spinner.fail('Error processing the sitemap')
+    process.exit(1)
     return false
   } finally {
     if (spinner.isSpinning) {
       spinner.stop()
     }
+    process.exit(0)
   }
 }
 
