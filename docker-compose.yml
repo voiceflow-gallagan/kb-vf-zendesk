@@ -14,4 +14,16 @@ services:
       timeout: 10s
       retries: 3
     environment:
-      - NODE_ENV=${NODE_ENV}
+      - DOCS_DIRECTORY = ${DOCS_DIRECTORY}
+      - KEEP_DOCS = ${KEEP_DOCS}
+      - MAX_FAILURES = ${MAX_FAILURES}
+      - ZENDESK_API_KEY = ${ZENDESK_API_KEY}
+      - ZENDESK_SUBDOMAIN = ${ZENDESK_SUBDOMAIN}
+      - ZENDESK_SITEMAP = ${ZENDESK_SITEMAP}
+      - SITEMAP_FILTER = ${SITEMAP_FILTER}
+      - VOICEFLOW_KB_API_KEY = ${VOICEFLOW_KB_API_KEY}
+      - ALWAYS_FORCE = ${ALWAYS_FORCE}
+      - PREVIOUS_DAYS = ${PREVIOUS_DAYS}
+      - DEBUG = ${DEBUG}
+      - NODE_ENV = ${NODE_ENV}
+      - PORT = ${PORT}
