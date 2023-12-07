@@ -35,10 +35,13 @@ const app = express()
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
+// Retrieve the PORT environment variable
+const port = process.env.PORT || 3000
+
 /* Create HTTP server */
-http.createServer(app).listen(process.env.PORT)
+http.createServer(app).listen(port)
 spinner.succeed(
-  'Voiceflow Zendesk KB | API is listening on port ' + process.env.PORT
+  `Voiceflow Zendesk KB | API is listening on port ${port}`
 )
 
 app.get('/health', async (req, res) => {
