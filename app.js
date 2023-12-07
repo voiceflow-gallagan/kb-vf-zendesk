@@ -16,6 +16,8 @@ import ora from 'ora'
 import cron from 'node-cron'
 import exp from 'constants'
 
+console.log('Environment Variables:', JSON.stringify(process.env, null, 2));
+
 const httpAgent = new http.Agent({ keepAlive: true })
 const httpsAgent = new https.Agent({ keepAlive: true })
 
