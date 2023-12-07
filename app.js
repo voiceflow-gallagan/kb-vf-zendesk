@@ -1,7 +1,7 @@
-/* Load environment variables from .env file
+/* Load environment variables from .env file */
 import * as dotenv from 'dotenv'
 dotenv.config()
-*/
+
 import inquirer from 'inquirer'
 import express from 'express'
 import http from 'http'
@@ -15,8 +15,6 @@ import SitemapXMLParser from 'sitemap-xml-parser'
 import ora from 'ora'
 import cron from 'node-cron'
 import exp from 'constants'
-
-console.log('Environment Variables:', JSON.stringify(process.env, null, 2));
 
 const httpAgent = new http.Agent({ keepAlive: true })
 const httpsAgent = new https.Agent({ keepAlive: true })
