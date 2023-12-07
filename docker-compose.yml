@@ -13,7 +13,5 @@ services:
       interval: 1m30s
       timeout: 10s
       retries: 3
-    volumes:
-      - .:/usr/src/app
     environment:
       - NODE_ENV=${NODE_ENV}
