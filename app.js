@@ -1,6 +1,7 @@
-/* Load environment variables from .env file */
+/* Load environment variables from .env file
 import * as dotenv from 'dotenv'
 dotenv.config()
+*/
 import inquirer from 'inquirer'
 import express from 'express'
 import http from 'http'
