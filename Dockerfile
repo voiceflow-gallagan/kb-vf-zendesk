@@ -11,8 +11,8 @@ RUN apt-get update && \
 # Install PM2 globally in the image
 RUN npm install pm2 -g
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+# Copy files
+COPY . .
 
 # Install app dependencies
 RUN npm install
